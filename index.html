@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f9f5ff;
+            text-align: center;
+            color: #333;
+            margin: 0;
+        }
+
+        #start-screen, #members-screen, #quiz-container, #result-screen {
+            max-width: 800px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            display: none;
+        }
+
+        h1 {
+            color: #6c5ce7;
+        }
+
+        button {
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 10px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #a29bfe;
+        }
+
+        .question {
+            font-size: 18px;
+            margin: 20px 0;
+        }
+
+        .question-counter {
+            font-size: 16px;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .options button {
+            display: block;
+            margin: 10px auto;
+            width: 80%;
+            background: #dfe6e9;
+            color: black;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .options button:hover {
+            transform: scale(1.05);
+        }
+
+        .options button.correct {
+            background-color: #55efc4 !important;
+            color: white;
+        }
+
+        .options button.wrong {
+            background-color: #ff7675 !important;
+            color: white;
+        }
+
+        .icon {
+            font-size: 50px;
+            color: #6c5ce7;
+            margin: 20px 0;
+            animation: bounce 1s infinite;
+        }
+
+        .lifeline-button {
+            background: #ffb142;
+            color: white;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 15px;
+            border: none;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        .lifeline-button:hover {
+            background: #f39c12;
+        }
+
+        /* Timer progress bar */
+        #timer {
+            width: 100%;
+            height: 20px;
+            background-color: #dfe6e9;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        #timer-bar {
+            height: 100%;
+            width: 100%;
+            background-color: #6c5ce7;
+            border-radius: 8px;
+            transition: width 1s linear;
+        }
+
+        #timer-bar.red {
+            background-color: red;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1><i class="fas fa-play icon"></i> Welcome to the Quiz Game</h1>
+        <button onclick="showQuiz()">Start</button>
+        <button onclick="showMembers()">Members</button>
+    </div>
+
+    <!-- Members Screen -->
+    <div id="members-screen">
+        <h1><i class="fas fa-users icon"></i> Chapter 2 Members</h1>
+        <p>Eilyn Manire</p>
+        <p>Loren Rabino</p>
+        <p>Richeal Garcia</p>
+        <p>Rey Ubaldo</p>
+        <p>Leny Mae Velasco</p>
+        <button onclick="showStart()">Back</button>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quiz-container">
+        <h1><i class="fas fa-question-circle icon"></i> Quiz Game</h1>
+        <div class="question" id="question">Question Text</div>
+        <div class="question-counter" id="question-counter"></div>
+        <div id="timer">
+            <div id="timer-bar"></div>
+        </div>
+        <div class="options" id="options"></div>
+        <button class="lifeline-button" id="fifty-fifty" onclick="useFiftyFifty()">50/50</button>
+        <button class="lifeline-button" id="pass" onclick="usePass()">Pass</button>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen">
+        <h1><i class="fas fa-trophy icon"></i> Quiz Completed!</h1>
+        <p id="score-message"></p>
+        <button onclick="showStart()">Go Back</button>
+    </div>
+
+    <script>
+        const startScreen = document.getElementById("start-screen");
+        const membersScreen = document.getElementById("members-screen");
+        const quizContainer = document.getElementById("quiz-container");
+        const resultScreen = document.getElementById("result-screen");
+        const questionElement = document.getElementById("question");
+        const questionCounterElement = document.getElementById("question-counter");
+        const optionsElement = document.getElementById("options");
+        const scoreMessageElement = document.getElementById("score-message");
+        const fiftyFiftyButton = document.getElementById("fifty-fifty");
+        const passButton = document.getElementById("pass");
+        const timerBar = document.getElementById("timer-bar");
+
+        const questions = [
+            { q: "Which of the following sets is equal to {1, 2, 3}?", options: ["{3, 2, 1}", "{1, 2, 3, 4}", "{2, 3}", "{1, 3, 2}"], answer: 3 },
+            { q: "Two sets are equivalent if they have the same...", options: ["elements", "order of elements", "number of elements", "type of elements"], answer: 2 },
+            { q: "Consider the sets A = {a, b, c} and B = {b, c, d}. Which of the following is TRUE?", options: ["A is a subset of B", "B is a subset of A", "A is a proper subset of B", "B is a proper subset of A"], answer: 0 },
+            { q: "If the universal set U = {1, 2, 3, 4, 5}, and set A = {1, 3, 5}, what is the complement of set A?", options: ["{2, 4}", "{1, 3, 5}", "{2, 3, 4}", "{1, 2, 3, 4, 5}"], answer: 0 },
+            { q: "Which of the following sets is a subset of {red, blue, green}?", options: ["{red, blue, green, yellow}", "{red, blue}", "{blue, green, yellow}", "{purple, orange}"], answer: 1 },
+            { q: "If set A = {1, 2, 3} and set B = {3, 2, 1}, are sets A and B equal?", options: ["Yes", "No"], answer: 0 },
+            { q: "Consider the sets: X = {a, b, c}, Y = {c, b, a}, and Z = {a, b}. Which of the following statements is TRUE?", options: ["X and Y are equivalent but not equal.", "X and Z are equal.", "Y is a proper subset of X.", "Z is a proper subset of Y."], answer: 0 },
+            { q: "Given the universal set U = {a, b, c, d, e} and set P = {a, c, e}, what is the complement of set P?", options: ["{b, d}", "{a, c, e}", "{b, c, d, e}", "{a, b, c, d, e}"], answer: 0 },
+            { q: "If set A = {1, 2, 3} and set B = {2, 3, 4}, are sets A and B equivalent?", options: ["Yes", "No"], answer: 1 },
+            { q: "Which of the following sets is a proper subset of {1, 2, 3, 4}?", options: ["{1, 2, 3, 4}", "{1, 2, 3}", "{2, 3, 4, 5}", "{1, 3, 5}"], answer: 1 }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let usedFiftyFifty = false;
+        let usedPass = false;
+        let timer;
+        let timeLeft = 15;
+
+        function showStart() {
+            membersScreen.style.display = "none";
+            quizContainer.style.display = "none";
+            resultScreen.style.display = "none";
+            startScreen.style.display = "block";
+        }
+
+        function showMembers() {
+            startScreen.style.display = "none";
+            membersScreen.style.display = "block";
+        }
+
+        function showQuiz() {
+            startScreen.style.display = "none";
+            resultScreen.style.display = "none";
+            quizContainer.style.display = "block";
+            currentQuestion = 0;
+            score = 0;
+            usedFiftyFifty = false;
+            usedPass = false;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQuestion];
+            questionElement.textContent = `Q${currentQuestion + 1}. ${q.q}`;
+            questionCounterElement.textContent = `${currentQuestion + 1}/${questions.length}`;
+            optionsElement.innerHTML = "";
+            q.options.forEach((opt, i) => {
+                const button = document.createElement("button");
+                button.textContent = opt;
+                button.onclick = () => handleAnswer(i, button);
+                optionsElement.appendChild(button);
+            });
+
+            // Reset lifelines
+            fiftyFiftyButton.disabled = usedFiftyFifty;
+            passButton.disabled = usedPass;
+
+            // Start the timer for this question
+            startTimer();
+        }
+
+        function handleAnswer(index, button) {
+            clearInterval(timer); // Stop the timer when the user answers
+            const q = questions[currentQuestion];
+            const correctButton = optionsElement.children[q.answer];
+
+            if (index === q.answer) {
+                button.classList.add("correct");
+                score++;
+            } else {
+                button.classList.add("wrong");
+                correctButton.classList.add("correct");
+            }
+
+            setTimeout(nextQuestion, 1000);
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            quizContainer.style.display = "none";
+            resultScreen.style.display = "block";
+
+            let message = "";
+            if (score === 10) {
+                message = "Perfect! Amazing work!";
+            } else if (score >= 8) {
+                message = "Great Job!";
+            } else if (score >= 5) {
+                message = "Good Try!";
+            } else {
+                message = "Better Luck Next Time!";
+            }
+
+            scoreMessageElement.innerHTML = `Your Score: ${score}/10<br>${message}`;
+        }
+
+        function startTimer() {
+            timeLeft = 15;
+            timerBar.style.width = "100%";
+            timerBar.classList.remove("red");
+
+            timer = setInterval(() => {
+                timeLeft--;
+                timerBar.style.width = `${(timeLeft / 15) * 100}%`;
+
+                // Change to red when 5 seconds are left
+                if (timeLeft <= 5) {
+                    timerBar.classList.add("red");
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        function useFiftyFifty() {
+            if (usedFiftyFifty) return;
+            usedFiftyFifty = true;
+
+            fiftyFiftyButton.disabled = true;
+            const q = questions[currentQuestion];
+            const correctAnswerIndex = q.answer;
+
+            let wrongAnswers = [];
+            for (let i = 0; i < q.options.length; i++) {
+                if (i !== correctAnswerIndex) {
+                    wrongAnswers.push(i);
+                }
+            }
+
+            for (let i = 0; i < 2; i++) {
+                const randIndex = Math.floor(Math.random() * wrongAnswers.length);
+                optionsElement.children[wrongAnswers[randIndex]].style.display = 'none';
+                wrongAnswers.splice(randIndex, 1);
+            }
+        }
+
+        function usePass() {
+            if (usedPass) return;
+            usedPass = true;
+            passButton.disabled = true;
+            nextQuestion();
+        }
+
+        showStart();
+    </script>
+</body>
+</html>
